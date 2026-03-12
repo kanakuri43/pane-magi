@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>出勤情報</title>
+  <title>出勤管理（管理者）</title>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     :root {
@@ -24,12 +24,12 @@
       padding: 14px 20px;
     }
     .app-header h1 { font-size: 1.15rem; color: var(--accent); letter-spacing: 3px; margin: 0; }
-    .admin-link {
+    .back-link {
       padding: 5px 18px; border: 1.5px solid var(--muted); border-radius: 20px;
       background: transparent; color: var(--muted); font-size: 0.8rem;
       text-decoration: none; transition: all .2s;
     }
-    .admin-link:hover { border-color: var(--accent); color: var(--accent); }
+    .back-link:hover { border-color: var(--accent); color: var(--accent); }
 
     /* ── Controls ── */
     .ctrl-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 1px; margin-bottom: 5px; }
@@ -56,52 +56,40 @@
     .date-display:hover { border-color: var(--accent); }
     #date-select { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
 
-    /* ── Tag filter ── */
+    /* ── Staff row ── */
     .section-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 2px; margin-bottom: 10px; }
-    .tag-filter { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 14px; }
-    .filter-tag {
-      font-size: 0.75rem; padding: 4px 13px; border-radius: 12px;
-      background: transparent; border: 1.5px solid var(--border); color: var(--muted);
-      cursor: pointer; transition: all .15s;
+    .staff-row {
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
+      display: flex; align-items: center; padding: 10px 14px; gap: 12px;
+      cursor: pointer; transition: all .2s; height: 100%;
+      box-shadow: 0 1px 6px rgba(79,168,216,.08);
     }
-    .filter-tag:hover { border-color: var(--accent); color: var(--accent); }
-    .filter-tag.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-
-    /* ── Staff card ── */
-    .staff-card {
-      background: var(--surface); border: 1.5px solid var(--border); border-radius: 14px;
-      overflow: hidden; text-align: center; height: 100%;
-      box-shadow: 0 2px 10px rgba(79,168,216,.10);
+    .staff-row.selected { border-color: var(--accent); background: #e8f6ff; }
+    .staff-row img { width: 44px; height: 74px; object-fit: cover; object-position: top; border-radius: 8px; flex-shrink: 0; }
+    .staff-row .r-info { flex: 1; min-width: 0; }
+    .staff-row .r-name { font-size: 0.9rem; margin-bottom: 4px; color: var(--text); font-weight: 600; }
+    .staff-row .check {
+      width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--border); flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center; font-size: 0.75rem; transition: all .2s;
     }
-    .staff-card img {
-      width: 100%; aspect-ratio: 3/5; object-fit: cover; object-position: top; display: block;
-    }
-    .staff-card .img-wrap { position: relative; display: block; }
-    .staff-card .img-wrap.has-url { cursor: pointer; }
-    .staff-card .img-wrap.has-url::after {
-      content: '詳細 ›';
-      position: absolute; bottom: 0; left: 0; right: 0;
-      background: rgba(79,168,216,.82); color: #fff;
-      font-size: 0.72rem; letter-spacing: 1px; text-align: center;
-      padding: 5px 0;
-      opacity: 0; transition: opacity .2s;
-    }
-    .staff-card .img-wrap.has-url:hover::after { opacity: 1; }
-    .staff-card .s-name { padding: 8px 6px 3px; font-size: 0.88rem; color: var(--text); letter-spacing: 1px; font-weight: 600; }
-    .staff-card .s-stats {
-      font-size: 0.62rem; color: var(--muted); padding: 0 6px 4px;
-      display: flex; justify-content: center; gap: 6px; flex-wrap: wrap;
-    }
-    .staff-card .s-tags { display: flex; flex-wrap: wrap; gap: 3px; justify-content: center; padding: 0 6px 10px; }
+    .staff-row.selected .check { background: var(--accent); border-color: var(--accent); color: #fff; }
 
     /* ── Tags ── */
     .tag {
       font-size: 0.62rem; padding: 2px 7px; border-radius: 10px;
       background: rgba(123,196,160,.15); border: 1px solid rgba(123,196,160,.5); color: #3d9e76;
     }
+    .r-tags { display: flex; flex-wrap: wrap; gap: 3px; }
 
     /* ── Misc ── */
-    .no-staff { text-align: center; color: var(--muted); padding: 40px 0; font-size: 0.9rem; }
+    .update-btn {
+      width: 100%; padding: 13px; margin-top: 16px;
+      background: linear-gradient(135deg, var(--accent), #2d8abf);
+      border: none; border-radius: 10px; color: #fff; font-size: 1rem;
+      cursor: pointer; letter-spacing: 2px; transition: opacity .2s;
+      box-shadow: 0 3px 12px rgba(79,168,216,.35);
+    }
+    .update-btn:hover { opacity: .88; }
     .toast-wrap {
       position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
       background: var(--accent); color: #fff; padding: 11px 26px; border-radius: 24px;
@@ -115,8 +103,8 @@
 
 <!-- Header -->
 <div class="app-header d-flex align-items-center justify-content-between">
-  <h1>✦ 出勤情報</h1>
-  <a href="admin.html" class="admin-link">管理者</a>
+  <h1>✦ 出勤管理</h1>
+  <a href="index.html" class="back-link">← 客用画面</a>
 </div>
 
 <!-- Controls -->
@@ -125,7 +113,7 @@
     <!-- Shop -->
     <div class="col-12 col-md-4">
       <div class="ctrl-label">SHOP</div>
-      <select class="app-select" id="shop-select" onchange="selectedTags=new Set();render()">
+      <select class="app-select" id="shop-select" onchange="render()">
         <option value="1">銀座店</option>
         <option value="2">六本木店</option>
         <option value="3">赤坂店</option>
@@ -143,10 +131,10 @@
     </div>
   </div>
 
-  <!-- Guest view -->
-  <div class="section-label">本日出勤</div>
-  <div class="tag-filter" id="tag-filter"></div>
-  <div class="row g-3" id="guest-grid"></div>
+  <!-- Admin view -->
+  <div class="section-label">出勤スタッフ選択</div>
+  <div class="row g-3" id="admin-list"></div>
+  <button class="update-btn" onclick="saveSchedule()">更　新</button>
 </div>
 
 <div class="toast-wrap" id="toast"></div>
@@ -155,7 +143,6 @@
 <script>
 // ── State ─────────────────────────────────────────────────────
 let currentDate = todayStr();
-let selectedTags = new Set();
 
 function getShop()   { return document.getElementById('shop-select').value; }
 function getOnDuty() { return schedule[getShop()][currentDate] || []; }
@@ -166,7 +153,6 @@ function updateDateDisplay() {
 }
 function shiftDate(delta) {
   currentDate = offsetDate(currentDate, delta);
-  selectedTags = new Set();
   updateDateDisplay();
   render();
 }
@@ -178,56 +164,40 @@ function openDatePicker() {
 }
 function onDatePicked() {
   currentDate = document.getElementById('date-select').value;
-  selectedTags = new Set();
   updateDateDisplay();
-  render();
-}
-
-// ── Tag filter ────────────────────────────────────────────────
-function renderTagFilter(dutyStaff) {
-  const allTags = [...new Set(dutyStaff.flatMap(s => s.tags))].sort();
-  const bar = document.getElementById('tag-filter');
-  bar.innerHTML = allTags.map(t =>
-    `<button class="filter-tag ${selectedTags.has(t)?'active':''}" onclick="toggleTagFilter('${t}')">${t}</button>`
-  ).join('');
-}
-function toggleTagFilter(tag) {
-  if (selectedTags.has(tag)) selectedTags.delete(tag); else selectedTags.add(tag);
   render();
 }
 
 // ── Render ────────────────────────────────────────────────────
 function render() {
-  const dutyStaff = getOnDuty().map(id => staff.find(x => x.id === id)).filter(Boolean);
-  renderTagFilter(dutyStaff);
-  const grid = document.getElementById('guest-grid');
-
-  if (!dutyStaff.length) {
-    grid.innerHTML = '<div class="col-12"><p class="no-staff">出勤スタッフなし</p></div>';
-    return;
-  }
-
-  const filtered = selectedTags.size ? dutyStaff.filter(s => [...selectedTags].every(t => s.tags.includes(t))) : dutyStaff;
-  if (!filtered.length) {
-    grid.innerHTML = '<div class="col-12"><p class="no-staff">該当スタッフなし</p></div>';
-    return;
-  }
-
-  grid.innerHTML = filtered.map(s => `
-    <div class="col-6 col-md-4 col-lg-3">
-      <div class="staff-card">
-        <div class="img-wrap ${s.url ? 'has-url' : ''}" ${s.url ? `onclick="window.open('${s.url}','_blank')"` : ''}>
-          <img src="${s.img}" alt="${s.name}" onerror="this.style.background='#0f3460';this.style.height='150px'">
+  const onDuty = getOnDuty();
+  const list = document.getElementById('admin-list');
+  list.innerHTML = staff.map(s => {
+    const sel = onDuty.includes(s.id);
+    return `
+    <div class="col-12 col-md-6">
+      <div class="staff-row ${sel?'selected':''}" onclick="toggleStaff(${s.id})">
+        <img src="${s.img}" alt="${s.name}" onerror="this.style.background='#0f3460'">
+        <div class="r-info">
+          <div class="r-name">${s.name}</div>
+          <div class="r-tags">${tagsHtml(s)}</div>
         </div>
-        <div class="s-name">${s.name}</div>
-        <div class="s-stats">
-          <span>${s.height}cm</span>
-          <span>B${s.bust} / W${s.waist} / H${s.hip}</span>
-        </div>
-        <div class="s-tags">${tagsHtml(s)}</div>
+        <div class="check">${sel?'✓':''}</div>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
+
+function toggleStaff(id) {
+  const shop = getShop();
+  if (!schedule[shop][currentDate]) schedule[shop][currentDate] = [];
+  const arr = schedule[shop][currentDate];
+  const idx = arr.indexOf(id);
+  if (idx >= 0) arr.splice(idx, 1); else arr.push(id);
+  render();
+}
+
+function saveSchedule() { showToast('更新しました'); }
 
 // ── Init ──────────────────────────────────────────────────────
 updateDateDisplay();
