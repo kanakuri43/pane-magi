@@ -153,7 +153,7 @@
     <!-- Shop -->
     <div class="col-12 col-md-4">
       <div class="ctrl-label">SHOP</div>
-      <select class="app-select" id="shop-select" onchange="selectedTag=null;render()">
+      <select class="app-select" id="shop-select" onchange="selectedTags=new Set();render()">
         <option value="1">銀座店</option>
         <option value="2">六本木店</option>
         <option value="3">赤坂店</option>
@@ -191,11 +191,11 @@
 <script>
 // ── Staff data ────────────────────────────────────────────────
 const staff = [
-  { id:1, name:'田中花子',  img:'panels/田中花子.png',  tags:['読書','カフェ巡り','映画'],       height:158, bust:85, waist:58, hip:86, url:'https://www.pokepara.jp/_hokkaido/m801/a1801/shop4072/gal/409983/' },
-  { id:2, name:'佐藤あかり',img:'panels/佐藤あかり.png',tags:['ヨガ','ネイル','ドライブ'],       height:163, bust:82, waist:55, hip:83, url:'https://www.jfa.jp/national_team/staff/MORIYASU_Hajime.html' },
-  { id:3, name:'渡辺咲良',  img:'panels/渡辺咲良.png',  tags:['料理','K-POP','ショッピング'],    height:155, bust:88, waist:60, hip:88, url:'https://www.jfa.jp/national_team/staff/MORIYASU_Hajime.html' },
-  { id:4, name:'板倉芽衣',  img:'panels/板倉芽衣.png',  tags:['筋トレ','アニメ','キャンプ'],     height:167, bust:80, waist:56, hip:82, url:'https://www.japan-baseball.jp/jp/profile/201901003.html' },
-  { id:5, name:'小林由奈',  img:'panels/小林由奈.png',  tags:['旅行','写真','カラオケ'],          height:160, bust:84, waist:57, hip:85, url:'https://www.pokepara.jp/_hokkaido/m801/a1801/shop4072/gal/409983/' },
+  { id:1, name:'田中花子',  img:'panels/田中花子.png',  tags:['読書','カフェ巡り','映画','キャンプ','ショッピング'], height:158, bust:85, waist:58, hip:86, url:'https://www.pokepara.jp/_hokkaido/m801/a1801/shop4072/gal/409983/' },
+  { id:2, name:'佐藤あかり',img:'panels/佐藤あかり.png',tags:['ヨガ','ネイル','ドライブ','映画','ショッピング'],  height:163, bust:82, waist:55, hip:83, url:'https://www.jfa.jp/national_team/staff/MORIYASU_Hajime.html' },
+  { id:3, name:'渡辺咲良',  img:'panels/渡辺咲良.png',  tags:['料理','K-POP','ショッピング','旅行'],height:155, bust:88, waist:60, hip:88, url:'https://www.jfa.jp/national_team/staff/MORIYASU_Hajime.html' },
+  { id:4, name:'板倉芽衣',  img:'panels/板倉芽衣.png',  tags:['筋トレ','アニメ','キャンプ','旅行','ショッピング'], height:167, bust:80, waist:56, hip:82, url:'https://www.japan-baseball.jp/jp/profile/201901003.html' },
+  { id:5, name:'小林由奈',  img:'panels/小林由奈.png',  tags:['旅行','写真','カラオケ','読書'],      height:160, bust:84, waist:57, hip:85, url:'https://www.pokepara.jp/_hokkaido/m801/a1801/shop4072/gal/409983/' },
 ];
 
 // ── Schedule dummy data (3/10 ~ 3/31) ────────────────────────
@@ -235,7 +235,7 @@ function fmtDate(str) {
 // ── State ─────────────────────────────────────────────────────
 let mode = 'guest';
 let currentDate = todayStr();
-let selectedTag = null;
+let selectedTags = new Set();
 
 function getShop()   { return document.getElementById('shop-select').value; }
 function getOnDuty() { return schedule[getShop()][currentDate] || []; }
@@ -246,7 +246,7 @@ function updateDateDisplay() {
 }
 function shiftDate(delta) {
   currentDate = offsetDate(currentDate, delta);
-  selectedTag = null;
+  selectedTags = new Set();
   updateDateDisplay();
   render();
 }
@@ -258,7 +258,7 @@ function openDatePicker() {
 }
 function onDatePicked() {
   currentDate = document.getElementById('date-select').value;
-  selectedTag = null;
+  selectedTags = new Set();
   updateDateDisplay();
   render();
 }
@@ -273,11 +273,11 @@ function renderTagFilter(dutyStaff) {
   const allTags = [...new Set(dutyStaff.flatMap(s => s.tags))].sort();
   const bar = document.getElementById('tag-filter');
   bar.innerHTML = allTags.map(t =>
-    `<button class="filter-tag ${selectedTag===t?'active':''}" onclick="toggleTagFilter('${t}')">${t}</button>`
+    `<button class="filter-tag ${selectedTags.has(t)?'active':''}" onclick="toggleTagFilter('${t}')">${t}</button>`
   ).join('');
 }
 function toggleTagFilter(tag) {
-  selectedTag = selectedTag === tag ? null : tag;
+  if (selectedTags.has(tag)) selectedTags.delete(tag); else selectedTags.add(tag);
   renderGuest();
 }
 
@@ -291,7 +291,7 @@ function renderGuest() {
     return;
   }
 
-  const filtered = selectedTag ? dutyStaff.filter(s => s.tags.includes(selectedTag)) : dutyStaff;
+  const filtered = selectedTags.size ? dutyStaff.filter(s => [...selectedTags].every(t => s.tags.includes(t))) : dutyStaff;
   if (!filtered.length) {
     grid.innerHTML = '<div class="col-12"><p class="no-staff">該当スタッフなし</p></div>';
     return;
