@@ -5,7 +5,8 @@
       "Bash(python -c \"from PIL import Image; img = Image.open\\('C:/Users/User3292/Desktop/hostess/unnamed.jpg'\\); print\\(img.size\\)\")",
       "Bash(python -c \"\nfrom PIL import Image\n\nimg = Image.open\\('C:/Users/User3292/Desktop/hostess/unnamed.jpg'\\)\nw, h = img.size\nnames = ['hanako_tanaka', 'akari_sato', 'sakura_watanabe', 'mei_itakura', 'yuna_kobayashi']\nsection_w = w // 5\n\nfor i, name in enumerate\\(names\\):\n    left = i * section_w\n    right = \\(i + 1\\) * section_w if i < 4 else w\n    crop = img.crop\\(\\(left, 0, right, h\\)\\)\n    out_path = f'C:/Users/User3292/Desktop/hostess/{name}.jpg'\n    crop.save\\(out_path\\)\n    print\\(f'Saved: {out_path} \\({right-left}x{h}\\)'\\)\n\")",
       "Bash(file \"C:\\\\Users\\\\User3292\\\\Desktop\\\\hostesses\\\\pics\"/*)",
-      "Bash(cd \"C:\\\\Users\\\\User3292\\\\Desktop\\\\hostesses\" && du -sh . && du -sh *)"
+      "Bash(cd \"C:\\\\Users\\\\User3292\\\\Desktop\\\\hostesses\" && du -sh . && du -sh *)",
+      "Bash(cd \"C:/Users/User3292/source/repos/pane-magi/panels\" && cp \"田中花子.png\" \"tanaka_hanako.png\" && cp \"佐藤あかり.png\" \"sato_akari.png\" && cp \"渡辺咲良.png\" \"watanabe_sakura.png\" && cp \"板倉芽衣.png\" \"itakura_mei.png\" && cp \"小林由奈.png\" \"kobayashi_yuna.png\" && ls)"
     ]
   }
 }

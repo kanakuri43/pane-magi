@@ -16,41 +16,54 @@
 
 ---
 
+## ファイル構成
+
+| ファイル | 用途 |
+|----------|------|
+| `index.html` | 客用画面（スタッフ出勤一覧・タグフィルター） |
+| `admin.html` | 管理者用画面（ログイン・出勤登録） |
+| `shared.js` | Supabaseクライアント・共通ユーティリティ（日付ヘルパー・Toast） |
+| `config.js` | Supabase URL・Anon Key（gitignore済み） |
+| `panels/` | スタッフ写真（ローカル用・英語ファイル名） |
+| `supabase/` | SQLファイル群（schema・seed・img_url更新） |
+
+---
+
 ## 画面構成
 
 ### 共通（両ページ共通）
 - アプリタイトル
-- 店舗セレクト
+- 店舗セレクト（Supabaseから動的ロード）
 - 日付セレクト（前後矢印ナビ・カレンダーピッカー）
 
 ### 客用ページ（`index.html`）
 - タグフィルター（複数選択・AND条件）
 - スタッフカードグリッド（写真・名前・スペック・タグ）
 - 写真クリックで外部プロフィールURLへ遷移（別タブ）
-- 管理者ページへのリンク（ヘッダー隅など）
+- 管理者ページへのリンク（ヘッダー隅）
 
 ### 管理者ページ（`admin.html`）
+- ログインオーバーレイ（Supabase Auth メール/パスワード）
 - スタッフ一覧（行形式・選択トグル）
-- 「更新」ボタン
-- 簡易パスワード認証（ページロード時またはアクセス時）
+- 「更新」ボタン（attendanceテーブルをdelete→insertで更新）
 - 客用ページへ戻るリンク
 
 ---
 
-## データモデル（予定）
+## データモデル
 
 ### stores
 | カラム | 型 | 説明 |
 |--------|----|------|
-| id | int | PK |
+| id | serial | PK |
 | name | text | 店舗名 |
 
 ### staff
 | カラム | 型 | 説明 |
 |--------|----|------|
-| id | int | PK |
+| id | serial | PK |
 | name | text | 氏名 |
-| img_url | text | Supabase Storage URL |
+| img_url | text | Supabase Storage URL（英語ファイル名） |
 | profile_url | text | 外部プロフィールページURL |
 | height | int | 身長 (cm) |
 | bust | int | バスト (cm) |
@@ -61,10 +74,19 @@
 ### attendance
 | カラム | 型 | 説明 |
 |--------|----|------|
-| id | int | PK |
+| id | serial | PK |
 | store_id | int | FK → stores |
 | staff_id | int | FK → staff |
 | date | date | 出勤日 |
+| ※ | UNIQUE | (store_id, staff_id, date) |
+
+---
+
+## 認証
+
+- Supabase Auth（メール/パスワード）
+- `admin.html` ロード時にセッション確認 → 未ログインならオーバーレイ表示
+- RLS: SELECT は全員許可、INSERT/UPDATE/DELETE は `authenticated` のみ
 
 ---
 
@@ -76,17 +98,13 @@
 - AND条件：選択したタグをすべて持つスタッフのみ表示
 - 店舗・日付変更時にリセット
 
-### 出勤データ
-- `schedule[shopId][dateStr]` = スタッフIDの配列
-- 管理者が選択して「更新」→ Supabaseに保存（予定）
+### 出勤データ保存
+- 「更新」ボタン押下時：対象 store_id × date の attendance を全DELETE → 選択IDをINSERT
 
 ---
 
 ## 今後の実装予定
 
-- [ ] 客用・管理者用のファイル分割（`index.html` / `admin.html` / `shared.js`）
-- [ ] Supabaseへのデータ移行（現状はJS内ハードコード）
-- [ ] 管理者認証（`admin.html` アクセス時にパスワード要求）
-- [ ] スタッフのプロフィール管理（CRUD）
-- [ ] 写真アップロード機能
+- [ ] スタッフ管理 CRUD（admin.htmlに追加）
+- [ ] 写真アップロード機能（Supabase Storage連携）
 - [ ] Netlifyへのデプロイ

@@ -75,6 +75,7 @@
     }
     .staff-card img {
       width: 100%; aspect-ratio: 3/5; object-fit: cover; object-position: top; display: block;
+      background: #d0edf8;
     }
     .staff-card .img-wrap { position: relative; display: block; }
     .staff-card .img-wrap.has-url { cursor: pointer; }
@@ -125,11 +126,7 @@
     <!-- Shop -->
     <div class="col-12 col-md-4">
       <div class="ctrl-label">SHOP</div>
-      <select class="app-select" id="shop-select" onchange="selectedTags=new Set();render()">
-        <option value="1">銀座店</option>
-        <option value="2">六本木店</option>
-        <option value="3">赤坂店</option>
-      </select>
+      <select class="app-select" id="shop-select" onchange="selectedTags=new Set();loadAttendance()"></select>
     </div>
     <!-- Date -->
     <div class="col-12 col-md-8">
@@ -151,44 +148,58 @@
 
 <div class="toast-wrap" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script src="shared.js"></script>
 <script>
 // ── State ─────────────────────────────────────────────────────
-let currentDate = todayStr();
+let staffList = [];
+let onDutyIds = [];
 let selectedTags = new Set();
+let currentDate = todayStr();
 
-function getShop()   { return document.getElementById('shop-select').value; }
-function getOnDuty() { return schedule[getShop()][currentDate] || []; }
+function getShop() { return document.getElementById('shop-select').value; }
 
-function updateDateDisplay() {
-  document.getElementById('date-display').textContent = fmtDate(currentDate);
-  document.getElementById('date-select').value = currentDate;
-}
-function shiftDate(delta) {
-  currentDate = offsetDate(currentDate, delta);
-  selectedTags = new Set();
+// ── Init ──────────────────────────────────────────────────────
+async function init() {
+  await loadStores();
+  await loadStaff();
   updateDateDisplay();
-  render();
+  await loadAttendance();
 }
-function openDatePicker() {
-  const el = document.getElementById('date-select');
-  el.style.pointerEvents = 'auto';
-  el.showPicker ? el.showPicker() : el.click();
-  el.style.pointerEvents = 'none';
+
+// ── Data loading ──────────────────────────────────────────────
+async function loadStores() {
+  const { data, error } = await db.from('stores').select('*').order('id');
+  if (error) { console.error(error); return; }
+  const sel = document.getElementById('shop-select');
+  sel.innerHTML = data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 }
-function onDatePicked() {
-  currentDate = document.getElementById('date-select').value;
-  selectedTags = new Set();
-  updateDateDisplay();
+
+async function loadStaff() {
+  const { data, error } = await db.from('staff').select('*').order('id');
+  if (error) { console.error(error); return; }
+  staffList = data;
+}
+
+async function loadAttendance() {
+  const storeId = getShop();
+  if (!storeId) return;
+  const { data, error } = await db.from('attendance')
+    .select('staff_id')
+    .eq('store_id', storeId)
+    .eq('date', currentDate);
+  if (error) { console.error(error); return; }
+  onDutyIds = (data || []).map(r => r.staff_id);
   render();
 }
 
 // ── Tag filter ────────────────────────────────────────────────
 function renderTagFilter(dutyStaff) {
-  const allTags = [...new Set(dutyStaff.flatMap(s => s.tags))].sort();
+  const allTags = [...new Set(dutyStaff.flatMap(s => s.tags || []))].sort();
   const bar = document.getElementById('tag-filter');
   bar.innerHTML = allTags.map(t =>
-    `<button class="filter-tag ${selectedTags.has(t)?'active':''}" onclick="toggleTagFilter('${t}')">${t}</button>`
+    `<button class="filter-tag ${selectedTags.has(t) ? 'active' : ''}" onclick="toggleTagFilter('${t}')">${t}</button>`
   ).join('');
 }
 function toggleTagFilter(tag) {
@@ -198,7 +209,7 @@ function toggleTagFilter(tag) {
 
 // ── Render ────────────────────────────────────────────────────
 function render() {
-  const dutyStaff = getOnDuty().map(id => staff.find(x => x.id === id)).filter(Boolean);
+  const dutyStaff = onDutyIds.map(id => staffList.find(x => x.id === id)).filter(Boolean);
   renderTagFilter(dutyStaff);
   const grid = document.getElementById('guest-grid');
 
@@ -207,7 +218,9 @@ function render() {
     return;
   }
 
-  const filtered = selectedTags.size ? dutyStaff.filter(s => [...selectedTags].every(t => s.tags.includes(t))) : dutyStaff;
+  const filtered = selectedTags.size
+    ? dutyStaff.filter(s => [...selectedTags].every(t => (s.tags || []).includes(t)))
+    : dutyStaff;
   if (!filtered.length) {
     grid.innerHTML = '<div class="col-12"><p class="no-staff">該当スタッフなし</p></div>';
     return;
@@ -216,8 +229,9 @@ function render() {
   grid.innerHTML = filtered.map(s => `
     <div class="col-6 col-md-4 col-lg-3">
       <div class="staff-card">
-        <div class="img-wrap ${s.url ? 'has-url' : ''}" ${s.url ? `onclick="window.open('${s.url}','_blank')"` : ''}>
-          <img src="${s.img}" alt="${s.name}" onerror="this.style.background='#0f3460';this.style.height='150px'">
+        <div class="img-wrap ${s.profile_url ? 'has-url' : ''}"
+             ${s.profile_url ? `onclick="window.open('${s.profile_url}','_blank')"` : ''}>
+          <img src="${s.img_url || ''}" alt="${s.name}" onerror="this.removeAttribute('src')">
         </div>
         <div class="s-name">${s.name}</div>
         <div class="s-stats">
@@ -229,9 +243,31 @@ function render() {
     </div>`).join('');
 }
 
-// ── Init ──────────────────────────────────────────────────────
-updateDateDisplay();
-render();
+// ── Date ──────────────────────────────────────────────────────
+function updateDateDisplay() {
+  document.getElementById('date-display').textContent = fmtDate(currentDate);
+  document.getElementById('date-select').value = currentDate;
+}
+function shiftDate(delta) {
+  currentDate = offsetDate(currentDate, delta);
+  selectedTags = new Set();
+  updateDateDisplay();
+  loadAttendance();
+}
+function openDatePicker() {
+  const el = document.getElementById('date-select');
+  el.style.pointerEvents = 'auto';
+  el.showPicker ? el.showPicker() : el.click();
+  el.style.pointerEvents = 'none';
+}
+function onDatePicked() {
+  currentDate = document.getElementById('date-select').value;
+  selectedTags = new Set();
+  updateDateDisplay();
+  loadAttendance();
+}
+
+init();
 </script>
 </body>
 </html>

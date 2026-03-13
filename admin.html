@@ -17,6 +17,25 @@
     }
     body { background: var(--bg); color: var(--text); font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
 
+    /* ── Login overlay ── */
+    #login-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 9999;
+      align-items: center; justify-content: center;
+    }
+    .login-box {
+      background: #fff; border-radius: 14px; padding: 36px 32px;
+      width: 90%; max-width: 360px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    }
+    .login-box h2 { font-size: 1.05rem; color: var(--accent); letter-spacing: 2px; margin-bottom: 22px; }
+    .login-btn {
+      width: 100%; padding: 12px; background: var(--accent);
+      border: none; border-radius: 8px; color: #fff;
+      font-size: 1rem; cursor: pointer; letter-spacing: 2px;
+    }
+    .login-btn:hover { opacity: .88; }
+
     /* ── Header ── */
     .app-header {
       background: linear-gradient(135deg, #e8f6ff, #d0edf8);
@@ -65,7 +84,7 @@
       box-shadow: 0 1px 6px rgba(79,168,216,.08);
     }
     .staff-row.selected { border-color: var(--accent); background: #e8f6ff; }
-    .staff-row img { width: 44px; height: 74px; object-fit: cover; object-position: top; border-radius: 8px; flex-shrink: 0; }
+    .staff-row img { width: 44px; height: 74px; object-fit: cover; object-position: top; border-radius: 8px; flex-shrink: 0; background: #d0edf8; }
     .staff-row .r-info { flex: 1; min-width: 0; }
     .staff-row .r-name { font-size: 0.9rem; margin-bottom: 4px; color: var(--text); font-weight: 600; }
     .staff-row .check {
@@ -101,6 +120,22 @@
 </head>
 <body>
 
+<!-- Login overlay -->
+<div id="login-overlay" style="display:none">
+  <div class="login-box">
+    <h2>管理者ログイン</h2>
+    <div class="mb-3">
+      <input type="email" id="login-email" class="form-control" placeholder="メールアドレス">
+    </div>
+    <div class="mb-3">
+      <input type="password" id="login-password" class="form-control" placeholder="パスワード"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <p id="login-error" style="color:#e74c3c; font-size:0.82rem; min-height:1.2em; margin-bottom:12px;"></p>
+    <button class="login-btn" onclick="doLogin()">ログイン</button>
+  </div>
+</div>
+
 <!-- Header -->
 <div class="app-header d-flex align-items-center justify-content-between">
   <h1>✦ 出勤管理</h1>
@@ -113,11 +148,7 @@
     <!-- Shop -->
     <div class="col-12 col-md-4">
       <div class="ctrl-label">SHOP</div>
-      <select class="app-select" id="shop-select" onchange="render()">
-        <option value="1">銀座店</option>
-        <option value="2">六本木店</option>
-        <option value="3">赤坂店</option>
-      </select>
+      <select class="app-select" id="shop-select" onchange="loadAttendance()"></select>
     </div>
     <!-- Date -->
     <div class="col-12 col-md-8">
@@ -139,14 +170,116 @@
 
 <div class="toast-wrap" id="toast"></div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
 <script src="shared.js"></script>
 <script>
 // ── State ─────────────────────────────────────────────────────
+let staffList = [];
+let onDutyIds = new Set();
 let currentDate = todayStr();
 
-function getShop()   { return document.getElementById('shop-select').value; }
-function getOnDuty() { return schedule[getShop()][currentDate] || []; }
+function getShop() { return document.getElementById('shop-select').value; }
 
+// ── Init ──────────────────────────────────────────────────────
+async function init() {
+  const { data: { session } } = await db.auth.getSession();
+  if (!session) {
+    const overlay = document.getElementById('login-overlay');
+    overlay.style.display = 'flex';
+    return;
+  }
+  await loadStores();
+  await loadStaff();
+  updateDateDisplay();
+  await loadAttendance();
+}
+
+// ── Login ─────────────────────────────────────────────────────
+async function doLogin() {
+  const email    = document.getElementById('login-email').value.trim();
+  const password = document.getElementById('login-password').value;
+  document.getElementById('login-error').textContent = '';
+
+  const { error } = await db.auth.signInWithPassword({ email, password });
+  if (error) {
+    document.getElementById('login-error').textContent = 'メールアドレスまたはパスワードが違います';
+    return;
+  }
+  document.getElementById('login-overlay').style.display = 'none';
+  await loadStores();
+  await loadStaff();
+  updateDateDisplay();
+  await loadAttendance();
+}
+
+// ── Data loading ──────────────────────────────────────────────
+async function loadStores() {
+  const { data, error } = await db.from('stores').select('*').order('id');
+  if (error) { console.error(error); return; }
+  const sel = document.getElementById('shop-select');
+  sel.innerHTML = data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
+}
+
+async function loadStaff() {
+  const { data, error } = await db.from('staff').select('*').order('id');
+  if (error) { console.error(error); return; }
+  staffList = data;
+}
+
+async function loadAttendance() {
+  const storeId = getShop();
+  if (!storeId) return;
+  const { data, error } = await db.from('attendance')
+    .select('staff_id')
+    .eq('store_id', storeId)
+    .eq('date', currentDate);
+  if (error) { console.error(error); return; }
+  onDutyIds = new Set((data || []).map(r => r.staff_id));
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────
+function render() {
+  const list = document.getElementById('admin-list');
+  list.innerHTML = staffList.map(s => {
+    const sel = onDutyIds.has(s.id);
+    return `
+    <div class="col-12 col-md-6">
+      <div class="staff-row ${sel ? 'selected' : ''}" onclick="toggleStaff(${s.id})">
+        <img src="${s.img_url || ''}" alt="${s.name}" onerror="this.removeAttribute('src')">
+        <div class="r-info">
+          <div class="r-name">${s.name}</div>
+          <div class="r-tags">${tagsHtml(s)}</div>
+        </div>
+        <div class="check">${sel ? '✓' : ''}</div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function toggleStaff(id) {
+  if (onDutyIds.has(id)) onDutyIds.delete(id); else onDutyIds.add(id);
+  render();
+}
+
+// ── Save ──────────────────────────────────────────────────────
+async function saveSchedule() {
+  const storeId = parseInt(getShop());
+  const { error: delErr } = await db.from('attendance').delete()
+    .eq('store_id', storeId)
+    .eq('date', currentDate);
+  if (delErr) { showToast('エラーが発生しました'); console.error(delErr); return; }
+
+  if (onDutyIds.size > 0) {
+    const rows = [...onDutyIds].map(id => ({ store_id: storeId, staff_id: id, date: currentDate }));
+    const { error: insErr } = await db.from('attendance').insert(rows);
+    if (insErr) { showToast('エラーが発生しました'); console.error(insErr); return; }
+  }
+  showToast('更新しました');
+}
+
+// ── Date ──────────────────────────────────────────────────────
 function updateDateDisplay() {
   document.getElementById('date-display').textContent = fmtDate(currentDate);
   document.getElementById('date-select').value = currentDate;
@@ -154,7 +287,7 @@ function updateDateDisplay() {
 function shiftDate(delta) {
   currentDate = offsetDate(currentDate, delta);
   updateDateDisplay();
-  render();
+  loadAttendance();
 }
 function openDatePicker() {
   const el = document.getElementById('date-select');
@@ -165,43 +298,10 @@ function openDatePicker() {
 function onDatePicked() {
   currentDate = document.getElementById('date-select').value;
   updateDateDisplay();
-  render();
+  loadAttendance();
 }
 
-// ── Render ────────────────────────────────────────────────────
-function render() {
-  const onDuty = getOnDuty();
-  const list = document.getElementById('admin-list');
-  list.innerHTML = staff.map(s => {
-    const sel = onDuty.includes(s.id);
-    return `
-    <div class="col-12 col-md-6">
-      <div class="staff-row ${sel?'selected':''}" onclick="toggleStaff(${s.id})">
-        <img src="${s.img}" alt="${s.name}" onerror="this.style.background='#0f3460'">
-        <div class="r-info">
-          <div class="r-name">${s.name}</div>
-          <div class="r-tags">${tagsHtml(s)}</div>
-        </div>
-        <div class="check">${sel?'✓':''}</div>
-      </div>
-    </div>`;
-  }).join('');
-}
-
-function toggleStaff(id) {
-  const shop = getShop();
-  if (!schedule[shop][currentDate]) schedule[shop][currentDate] = [];
-  const arr = schedule[shop][currentDate];
-  const idx = arr.indexOf(id);
-  if (idx >= 0) arr.splice(idx, 1); else arr.push(id);
-  render();
-}
-
-function saveSchedule() { showToast('更新しました'); }
-
-// ── Init ──────────────────────────────────────────────────────
-updateDateDisplay();
-render();
+init();
 </script>
 </body>
 </html>
