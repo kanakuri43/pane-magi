@@ -50,6 +50,19 @@
     }
     .back-link:hover { border-color: var(--accent); color: var(--accent); }
 
+    /* ── Tab nav ── */
+    .admin-tabs {
+      display: flex; border-bottom: 2px solid var(--border);
+      background: var(--surface); padding: 0 20px;
+    }
+    .admin-tab {
+      padding: 12px 20px; font-size: 0.88rem; letter-spacing: 1.5px;
+      border: none; background: none; color: var(--muted); cursor: pointer;
+      border-bottom: 2px solid transparent; margin-bottom: -2px; transition: all .2s;
+    }
+    .admin-tab.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: 600; }
+    .admin-tab:hover:not(.active) { color: var(--text); }
+
     /* ── Controls ── */
     .ctrl-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 1px; margin-bottom: 5px; }
     .app-select {
@@ -75,7 +88,7 @@
     .date-display:hover { border-color: var(--accent); }
     #date-select { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
 
-    /* ── Staff row ── */
+    /* ── Staff row (attendance) ── */
     .section-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 2px; margin-bottom: 10px; }
     .staff-row {
       background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
@@ -116,6 +129,76 @@
       box-shadow: 0 4px 16px rgba(79,168,216,.4);
     }
     .toast-wrap.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Staff management ── */
+    .add-staff-btn {
+      padding: 9px 22px; background: var(--accent2); border: none; border-radius: 8px;
+      color: #fff; font-size: 0.88rem; cursor: pointer; letter-spacing: 1px; transition: opacity .2s;
+    }
+    .add-staff-btn:hover { opacity: .88; }
+    .mgmt-row {
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
+      display: flex; align-items: center; padding: 10px 14px; gap: 12px;
+      box-shadow: 0 1px 6px rgba(79,168,216,.08);
+    }
+    .mgmt-row img {
+      width: 44px; height: 74px; object-fit: cover; object-position: top;
+      border-radius: 8px; flex-shrink: 0; background: #d0edf8;
+    }
+    .mgmt-row .r-info { flex: 1; min-width: 0; }
+    .mgmt-row .r-name { font-size: 0.9rem; color: var(--text); font-weight: 600; margin-bottom: 3px; }
+    .mgmt-row .r-spec { font-size: 0.72rem; color: var(--muted); margin-bottom: 3px; }
+    .mgmt-actions { display: flex; gap: 6px; flex-shrink: 0; }
+    .btn-edit {
+      padding: 5px 14px; font-size: 0.78rem; border-radius: 6px;
+      border: 1.5px solid var(--accent); background: transparent; color: var(--accent);
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-edit:hover { background: var(--accent); color: #fff; }
+    .btn-del {
+      padding: 5px 14px; font-size: 0.78rem; border-radius: 6px;
+      border: 1.5px solid #e07070; background: transparent; color: #e07070;
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-del:hover { background: #e07070; color: #fff; }
+
+    /* ── Modal ── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(0,0,0,.55); z-index: 8000;
+      align-items: flex-start; justify-content: center;
+      padding: 20px; overflow-y: auto;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-box {
+      background: #fff; border-radius: 14px; padding: 28px 28px;
+      width: 100%; max-width: 500px; margin: auto;
+      box-shadow: 0 8px 32px rgba(0,0,0,.2);
+    }
+    .modal-box h3 { font-size: 1rem; color: var(--accent); letter-spacing: 2px; margin-bottom: 20px; }
+    .modal-label { font-size: 0.72rem; color: var(--muted); letter-spacing: 1px; margin-bottom: 4px; }
+    .modal-input {
+      width: 100%; padding: 8px 12px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 0.9rem; color: var(--text); background: var(--bg);
+    }
+    .modal-input:focus { outline: none; border-color: var(--accent); }
+    .photo-preview {
+      width: 60px; height: 100px; object-fit: cover; object-position: top;
+      border-radius: 8px; background: #d0edf8; border: 1.5px solid var(--border);
+    }
+    .modal-save-btn {
+      width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent), #2d8abf);
+      border: none; border-radius: 10px; color: #fff; font-size: 1rem;
+      cursor: pointer; letter-spacing: 2px; transition: opacity .2s;
+      box-shadow: 0 3px 12px rgba(79,168,216,.35);
+    }
+    .modal-save-btn:hover { opacity: .88; }
+    .modal-cancel-btn {
+      width: 100%; padding: 10px; background: transparent;
+      border: 1.5px solid var(--border); border-radius: 10px; color: var(--muted);
+      font-size: 0.9rem; cursor: pointer; letter-spacing: 1px; transition: all .2s; margin-top: 8px;
+    }
+    .modal-cancel-btn:hover { border-color: var(--muted); color: var(--text); }
   </style>
 </head>
 <body>
@@ -142,30 +225,104 @@
   <a href="index.html" class="back-link">← 客用画面</a>
 </div>
 
-<!-- Controls -->
-<div class="container-lg py-4 px-3 px-md-4">
-  <div class="row g-3 mb-3">
-    <!-- Shop -->
-    <div class="col-12 col-md-4">
-      <div class="ctrl-label">SHOP</div>
-      <select class="app-select" id="shop-select" onchange="loadAttendance()"></select>
-    </div>
-    <!-- Date -->
-    <div class="col-12 col-md-8">
-      <div class="ctrl-label">DATE</div>
-      <div class="d-flex align-items-center gap-2">
-        <button class="date-arrow" onclick="shiftDate(-1)">‹</button>
-        <div class="date-display" onclick="openDatePicker()" id="date-display"></div>
-        <button class="date-arrow" onclick="shiftDate(1)">›</button>
-      </div>
-      <input type="date" id="date-select" onchange="onDatePicked()">
-    </div>
-  </div>
+<!-- Tab nav -->
+<div class="admin-tabs">
+  <button class="admin-tab active" id="tab-btn-attendance" onclick="showTab('attendance')">出勤登録</button>
+  <button class="admin-tab" id="tab-btn-staff" onclick="showTab('staff')">スタッフ管理</button>
+</div>
 
-  <!-- Admin view -->
-  <div class="section-label">出勤スタッフ選択</div>
-  <div class="row g-3" id="admin-list"></div>
-  <button class="update-btn" onclick="saveSchedule()">更　新</button>
+<!-- ── Tab: 出勤登録 ── -->
+<div id="tab-attendance">
+  <div class="container-lg py-4 px-3 px-md-4">
+    <div class="row g-3 mb-3">
+      <!-- Shop -->
+      <div class="col-12 col-md-4">
+        <div class="ctrl-label">SHOP</div>
+        <select class="app-select" id="shop-select" onchange="loadAttendance()"></select>
+      </div>
+      <!-- Date -->
+      <div class="col-12 col-md-8">
+        <div class="ctrl-label">DATE</div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="date-arrow" onclick="shiftDate(-1)">‹</button>
+          <div class="date-display" onclick="openDatePicker()" id="date-display"></div>
+          <button class="date-arrow" onclick="shiftDate(1)">›</button>
+        </div>
+        <input type="date" id="date-select" onchange="onDatePicked()">
+      </div>
+    </div>
+
+    <div class="section-label">出勤スタッフ選択</div>
+    <div class="row g-3" id="admin-list"></div>
+    <button class="update-btn" onclick="saveSchedule()">更　新</button>
+  </div>
+</div>
+
+<!-- ── Tab: スタッフ管理 ── -->
+<div id="tab-staff" style="display:none">
+  <div class="container-lg py-4 px-3 px-md-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="section-label mb-0">スタッフ一覧</div>
+      <button class="add-staff-btn" onclick="openStaffModal()">＋ 新規追加</button>
+    </div>
+    <div class="d-flex flex-column gap-2" id="staff-mgmt-list"></div>
+  </div>
+</div>
+
+<!-- ── Staff modal ── -->
+<div class="modal-overlay" id="staff-modal">
+  <div class="modal-box">
+    <h3 id="modal-title">スタッフ登録</h3>
+
+    <div class="mb-3">
+      <div class="modal-label">名前 *</div>
+      <input type="text" id="m-name" class="modal-input" placeholder="氏名">
+    </div>
+    <div class="mb-3">
+      <div class="modal-label">プロフィールURL</div>
+      <input type="url" id="m-profile-url" class="modal-input" placeholder="https://...">
+    </div>
+
+    <div class="row g-2 mb-3">
+      <div class="col-6 col-sm-3">
+        <div class="modal-label">身長 (cm)</div>
+        <input type="number" id="m-height" class="modal-input" placeholder="160">
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="modal-label">バスト (cm)</div>
+        <input type="number" id="m-bust" class="modal-input" placeholder="85">
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="modal-label">ウエスト (cm)</div>
+        <input type="number" id="m-waist" class="modal-input" placeholder="60">
+      </div>
+      <div class="col-6 col-sm-3">
+        <div class="modal-label">ヒップ (cm)</div>
+        <input type="number" id="m-hip" class="modal-input" placeholder="88">
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <div class="modal-label">タグ（カンマ区切り）</div>
+      <input type="text" id="m-tags" class="modal-input" placeholder="読書, 料理, 旅行">
+    </div>
+
+    <div class="mb-3">
+      <div class="modal-label">写真</div>
+      <div class="d-flex align-items-center gap-3">
+        <img id="m-photo-preview" class="photo-preview" alt="preview">
+        <div>
+          <input type="file" id="m-photo" accept="image/*" onchange="previewPhoto(this)" style="display:none">
+          <button type="button" class="btn-edit" onclick="document.getElementById('m-photo').click()">写真を選択</button>
+          <div id="m-photo-name" style="font-size:0.72rem; color:var(--muted); margin-top:6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-save-error" style="color:#e74c3c; font-size:0.82rem; min-height:1.2em; margin-bottom:8px;"></div>
+    <button class="modal-save-btn" onclick="saveStaff()">保　存</button>
+    <button class="modal-cancel-btn" onclick="closeStaffModal()">キャンセル</button>
+  </div>
 </div>
 
 <div class="toast-wrap" id="toast"></div>
@@ -178,6 +335,7 @@
 let staffList = [];
 let onDutyIds = new Set();
 let currentDate = todayStr();
+let editingStaffId = null;   // null = new, number = editing
 
 function getShop() { return document.getElementById('shop-select').value; }
 
@@ -213,6 +371,15 @@ async function doLogin() {
   await loadAttendance();
 }
 
+// ── Tab ───────────────────────────────────────────────────────
+function showTab(tab) {
+  document.getElementById('tab-attendance').style.display = tab === 'attendance' ? '' : 'none';
+  document.getElementById('tab-staff').style.display      = tab === 'staff'      ? '' : 'none';
+  document.getElementById('tab-btn-attendance').classList.toggle('active', tab === 'attendance');
+  document.getElementById('tab-btn-staff').classList.toggle('active', tab === 'staff');
+  if (tab === 'staff') renderStaffMgmt();
+}
+
 // ── Data loading ──────────────────────────────────────────────
 async function loadStores() {
   const { data, error } = await db.from('stores').select('*').order('id');
@@ -239,7 +406,7 @@ async function loadAttendance() {
   render();
 }
 
-// ── Render ────────────────────────────────────────────────────
+// ── Attendance render ──────────────────────────────────────────
 function render() {
   const list = document.getElementById('admin-list');
   list.innerHTML = staffList.map(s => {
@@ -263,7 +430,7 @@ function toggleStaff(id) {
   render();
 }
 
-// ── Save ──────────────────────────────────────────────────────
+// ── Save attendance ────────────────────────────────────────────
 async function saveSchedule() {
   const storeId = parseInt(getShop());
   const { error: delErr } = await db.from('attendance').delete()
@@ -299,6 +466,126 @@ function onDatePicked() {
   currentDate = document.getElementById('date-select').value;
   updateDateDisplay();
   loadAttendance();
+}
+
+// ── Staff management render ────────────────────────────────────
+function renderStaffMgmt() {
+  const list = document.getElementById('staff-mgmt-list');
+  if (staffList.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted); font-size:0.88rem;">スタッフが登録されていません</p>';
+    return;
+  }
+  list.innerHTML = staffList.map(s => {
+    const spec = [s.height && `${s.height}cm`, s.bust && `B${s.bust}`, s.waist && `W${s.waist}`, s.hip && `H${s.hip}`]
+      .filter(Boolean).join(' / ');
+    return `
+    <div class="mgmt-row">
+      <img src="${s.img_url || ''}" alt="${s.name}" onerror="this.removeAttribute('src')">
+      <div class="r-info">
+        <div class="r-name">${s.name}</div>
+        ${spec ? `<div class="r-spec">${spec}</div>` : ''}
+        <div class="r-tags">${tagsHtml(s)}</div>
+      </div>
+      <div class="mgmt-actions">
+        <button class="btn-edit" onclick="openStaffModal(${s.id})">編集</button>
+        <button class="btn-del" onclick="deleteStaff(${s.id}, '${s.name.replace(/'/g, "\\'")}')">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ── Staff modal ────────────────────────────────────────────────
+function openStaffModal(staffId) {
+  editingStaffId = staffId || null;
+  document.getElementById('modal-title').textContent = staffId ? 'スタッフ編集' : 'スタッフ登録';
+  document.getElementById('modal-save-error').textContent = '';
+
+  const s = staffId ? staffList.find(x => x.id === staffId) : null;
+  document.getElementById('m-name').value        = s?.name        || '';
+  document.getElementById('m-profile-url').value = s?.profile_url || '';
+  document.getElementById('m-height').value      = s?.height      ?? 160;
+  document.getElementById('m-bust').value        = s?.bust        ?? 80;
+  document.getElementById('m-waist').value       = s?.waist       ?? 50;
+  document.getElementById('m-hip').value         = s?.hip         ?? 80;
+  document.getElementById('m-tags').value        = (s?.tags || []).join(', ');
+  document.getElementById('m-photo').value       = '';
+  document.getElementById('m-photo-name').textContent = '';
+  const preview = document.getElementById('m-photo-preview');
+  preview.src = s?.img_url || '';
+  if (!s?.img_url) preview.removeAttribute('src');
+
+  document.getElementById('staff-modal').classList.add('open');
+}
+
+function closeStaffModal() {
+  document.getElementById('staff-modal').classList.remove('open');
+}
+
+function previewPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('m-photo-name').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = e => { document.getElementById('m-photo-preview').src = e.target.result; };
+  reader.readAsDataURL(file);
+}
+
+async function saveStaff() {
+  const name = document.getElementById('m-name').value.trim();
+  if (!name) {
+    document.getElementById('modal-save-error').textContent = '名前は必須です';
+    return;
+  }
+  document.getElementById('modal-save-error').textContent = '';
+
+  const payload = {
+    name,
+    profile_url: document.getElementById('m-profile-url').value.trim() || null,
+    height: parseInt(document.getElementById('m-height').value) || null,
+    bust:   parseInt(document.getElementById('m-bust').value)   || null,
+    waist:  parseInt(document.getElementById('m-waist').value)  || null,
+    hip:    parseInt(document.getElementById('m-hip').value)    || null,
+    tags:   document.getElementById('m-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+  };
+
+  // Photo upload
+  const photoFile = document.getElementById('m-photo').files[0];
+  if (photoFile) {
+    const ext = photoFile.name.split('.').pop();
+    const fileName = `${crypto.randomUUID()}.${ext}`;
+    const { error: upErr } = await db.storage.from('panels').upload(fileName, photoFile, { upsert: true });
+    if (upErr) {
+      document.getElementById('modal-save-error').textContent = '写真のアップロードに失敗しました';
+      console.error(upErr);
+      return;
+    }
+    const { data: urlData } = db.storage.from('panels').getPublicUrl(fileName);
+    payload.img_url = urlData.publicUrl;
+  }
+
+  if (editingStaffId) {
+    const { error } = await db.from('staff').update(payload).eq('id', editingStaffId);
+    if (error) { document.getElementById('modal-save-error').textContent = '保存に失敗しました'; console.error(error); return; }
+  } else {
+    const { error } = await db.from('staff').insert(payload);
+    if (error) { document.getElementById('modal-save-error').textContent = '保存に失敗しました'; console.error(error); return; }
+  }
+
+  await loadStaff();
+  renderStaffMgmt();
+  render(); // refresh attendance list too
+  closeStaffModal();
+  showToast(editingStaffId ? '更新しました' : '登録しました');
+}
+
+async function deleteStaff(id, name) {
+  if (!confirm(`「${name}」を削除しますか？\n関連する出勤データも削除されます。`)) return;
+  const { error } = await db.from('staff').delete().eq('id', id);
+  if (error) { showToast('削除に失敗しました'); console.error(error); return; }
+  await loadStaff();
+  renderStaffMgmt();
+  render();
+  showToast('削除しました');
 }
 
 init();
