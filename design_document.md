@@ -57,6 +57,8 @@
 |--------|----|------|
 | id | serial | PK |
 | name | text | 店舗名 |
+| address | text | 住所 |
+| tel | text | 電話番号 |
 
 ### staff
 | カラム | 型 | 説明 |
@@ -70,6 +72,7 @@
 | waist | int | ウエスト (cm) |
 | hip | int | ヒップ (cm) |
 | tags | text[] | 趣味・特技タグ |
+| store_id | int | FK → stores（所属店舗） |
 
 ### attendance
 | カラム | 型 | 説明 |

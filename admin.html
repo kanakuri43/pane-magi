@@ -130,6 +130,19 @@
     }
     .toast-wrap.show { transform: translateX(-50%) translateY(0); }
 
+    /* ── Store management ── */
+    .add-store-btn {
+      padding: 9px 22px; background: var(--accent); border: none; border-radius: 8px;
+      color: #fff; font-size: 0.88rem; cursor: pointer; letter-spacing: 1px; transition: opacity .2s;
+    }
+    .add-store-btn:hover { opacity: .88; }
+    .store-mgmt-row {
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 12px 16px; box-shadow: 0 1px 6px rgba(79,168,216,.08);
+    }
+    .store-mgmt-row .s-name { font-size: 0.9rem; color: var(--text); font-weight: 600; margin-bottom: 3px; }
+    .store-mgmt-row .s-detail { font-size: 0.75rem; color: var(--muted); }
+
     /* ── Staff management ── */
     .add-staff-btn {
       padding: 9px 22px; background: var(--accent2); border: none; border-radius: 8px;
@@ -229,6 +242,7 @@
 <div class="admin-tabs">
   <button class="admin-tab active" id="tab-btn-attendance" onclick="showTab('attendance')">出勤登録</button>
   <button class="admin-tab" id="tab-btn-staff" onclick="showTab('staff')">スタッフ管理</button>
+  <button class="admin-tab" id="tab-btn-store" onclick="showTab('store')">店舗管理</button>
 </div>
 
 <!-- ── Tab: 出勤登録 ── -->
@@ -269,6 +283,41 @@
   </div>
 </div>
 
+<!-- ── Tab: 店舗管理 ── -->
+<div id="tab-store" style="display:none">
+  <div class="container-lg py-4 px-3 px-md-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="section-label mb-0">店舗一覧</div>
+      <button class="add-store-btn" onclick="openStoreModal()">＋ 新規追加</button>
+    </div>
+    <div class="d-flex flex-column gap-2" id="store-mgmt-list"></div>
+  </div>
+</div>
+
+<!-- ── Store modal ── -->
+<div class="modal-overlay" id="store-modal">
+  <div class="modal-box">
+    <h3 id="store-modal-title">店舗登録</h3>
+
+    <div class="mb-3">
+      <div class="modal-label">店舗名 *</div>
+      <input type="text" id="sm-name" class="modal-input" placeholder="店舗名">
+    </div>
+    <div class="mb-3">
+      <div class="modal-label">住所</div>
+      <input type="text" id="sm-address" class="modal-input" placeholder="東京都渋谷区...">
+    </div>
+    <div class="mb-3">
+      <div class="modal-label">TEL</div>
+      <input type="tel" id="sm-tel" class="modal-input" placeholder="03-0000-0000">
+    </div>
+
+    <div id="store-modal-error" style="color:#e74c3c; font-size:0.82rem; min-height:1.2em; margin-bottom:8px;"></div>
+    <button class="modal-save-btn" onclick="saveStore()">保　存</button>
+    <button class="modal-cancel-btn" onclick="closeStoreModal()">キャンセル</button>
+  </div>
+</div>
+
 <!-- ── Staff modal ── -->
 <div class="modal-overlay" id="staff-modal">
   <div class="modal-box">
@@ -277,6 +326,10 @@
     <div class="mb-3">
       <div class="modal-label">名前 *</div>
       <input type="text" id="m-name" class="modal-input" placeholder="氏名">
+    </div>
+    <div class="mb-3">
+      <div class="modal-label">所属店舗</div>
+      <select id="m-store-id" class="modal-input"></select>
     </div>
     <div class="mb-3">
       <div class="modal-label">プロフィールURL</div>
@@ -333,9 +386,11 @@
 <script>
 // ── State ─────────────────────────────────────────────────────
 let staffList = [];
+let storeList = [];
 let onDutyIds = new Set();
 let currentDate = todayStr();
 let editingStaffId = null;   // null = new, number = editing
+let editingStoreId = null;   // null = new, number = editing
 
 function getShop() { return document.getElementById('shop-select').value; }
 
@@ -375,15 +430,19 @@ async function doLogin() {
 function showTab(tab) {
   document.getElementById('tab-attendance').style.display = tab === 'attendance' ? '' : 'none';
   document.getElementById('tab-staff').style.display      = tab === 'staff'      ? '' : 'none';
+  document.getElementById('tab-store').style.display      = tab === 'store'      ? '' : 'none';
   document.getElementById('tab-btn-attendance').classList.toggle('active', tab === 'attendance');
   document.getElementById('tab-btn-staff').classList.toggle('active', tab === 'staff');
+  document.getElementById('tab-btn-store').classList.toggle('active', tab === 'store');
   if (tab === 'staff') renderStaffMgmt();
+  if (tab === 'store') renderStoreMgmt();
 }
 
 // ── Data loading ──────────────────────────────────────────────
 async function loadStores() {
   const { data, error } = await db.from('stores').select('*').order('id');
   if (error) { console.error(error); return; }
+  storeList = data;
   const sel = document.getElementById('shop-select');
   sel.innerHTML = data.map(s => `<option value="${s.id}">${s.name}</option>`).join('');
 }
@@ -478,11 +537,13 @@ function renderStaffMgmt() {
   list.innerHTML = staffList.map(s => {
     const spec = [s.height && `${s.height}cm`, s.bust && `B${s.bust}`, s.waist && `W${s.waist}`, s.hip && `H${s.hip}`]
       .filter(Boolean).join(' / ');
+    const storeName = s.store_id ? (storeList.find(x => x.id === s.store_id)?.name || '') : '';
     return `
     <div class="mgmt-row">
       <img src="${s.img_url || ''}" alt="${s.name}" onerror="this.removeAttribute('src')">
       <div class="r-info">
         <div class="r-name">${s.name}</div>
+        ${storeName ? `<div class="r-spec">${storeName}</div>` : ''}
         ${spec ? `<div class="r-spec">${spec}</div>` : ''}
         <div class="r-tags">${tagsHtml(s)}</div>
       </div>
@@ -514,6 +575,11 @@ function openStaffModal(staffId) {
   preview.src = s?.img_url || '';
   if (!s?.img_url) preview.removeAttribute('src');
 
+  // 店舗セレクト
+  const storeSelect = document.getElementById('m-store-id');
+  storeSelect.innerHTML = '<option value="">（未所属）</option>' +
+    storeList.map(st => `<option value="${st.id}" ${s?.store_id === st.id ? 'selected' : ''}>${st.name}</option>`).join('');
+
   document.getElementById('staff-modal').classList.add('open');
 }
 
@@ -538,6 +604,7 @@ async function saveStaff() {
   }
   document.getElementById('modal-save-error').textContent = '';
 
+  const storeIdVal = document.getElementById('m-store-id').value;
   const payload = {
     name,
     profile_url: document.getElementById('m-profile-url').value.trim() || null,
@@ -546,6 +613,7 @@ async function saveStaff() {
     waist:  parseInt(document.getElementById('m-waist').value)  || null,
     hip:    parseInt(document.getElementById('m-hip').value)    || null,
     tags:   document.getElementById('m-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+    store_id: storeIdVal ? parseInt(storeIdVal) : null,
   };
 
   // Photo upload
@@ -585,6 +653,81 @@ async function deleteStaff(id, name) {
   await loadStaff();
   renderStaffMgmt();
   render();
+  showToast('削除しました');
+}
+
+// ── Store management ──────────────────────────────────────────
+function renderStoreMgmt() {
+  const list = document.getElementById('store-mgmt-list');
+  if (storeList.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted); font-size:0.88rem;">店舗が登録されていません</p>';
+    return;
+  }
+  list.innerHTML = storeList.map(st => `
+    <div class="store-mgmt-row d-flex align-items-center justify-content-between gap-3">
+      <div>
+        <div class="s-name">${st.name}</div>
+        ${st.address ? `<div class="s-detail">${st.address}</div>` : ''}
+        ${st.tel     ? `<div class="s-detail">${st.tel}</div>`     : ''}
+      </div>
+      <div class="mgmt-actions flex-shrink-0">
+        <button class="btn-edit" onclick="openStoreModal(${st.id})">編集</button>
+        <button class="btn-del" onclick="deleteStore(${st.id}, '${st.name.replace(/'/g, "\\'")}')">削除</button>
+      </div>
+    </div>`).join('');
+}
+
+function openStoreModal(storeId) {
+  editingStoreId = storeId || null;
+  document.getElementById('store-modal-title').textContent = storeId ? '店舗編集' : '店舗登録';
+  document.getElementById('store-modal-error').textContent = '';
+
+  const st = storeId ? storeList.find(x => x.id === storeId) : null;
+  document.getElementById('sm-name').value    = st?.name    || '';
+  document.getElementById('sm-address').value = st?.address || '';
+  document.getElementById('sm-tel').value     = st?.tel     || '';
+
+  document.getElementById('store-modal').classList.add('open');
+}
+
+function closeStoreModal() {
+  document.getElementById('store-modal').classList.remove('open');
+}
+
+async function saveStore() {
+  const name = document.getElementById('sm-name').value.trim();
+  if (!name) {
+    document.getElementById('store-modal-error').textContent = '店舗名は必須です';
+    return;
+  }
+  document.getElementById('store-modal-error').textContent = '';
+
+  const payload = {
+    name,
+    address: document.getElementById('sm-address').value.trim() || null,
+    tel:     document.getElementById('sm-tel').value.trim()     || null,
+  };
+
+  if (editingStoreId) {
+    const { error } = await db.from('stores').update(payload).eq('id', editingStoreId);
+    if (error) { document.getElementById('store-modal-error').textContent = '保存に失敗しました'; console.error(error); return; }
+  } else {
+    const { error } = await db.from('stores').insert(payload);
+    if (error) { document.getElementById('store-modal-error').textContent = '保存に失敗しました'; console.error(error); return; }
+  }
+
+  await loadStores();
+  renderStoreMgmt();
+  closeStoreModal();
+  showToast(editingStoreId ? '更新しました' : '登録しました');
+}
+
+async function deleteStore(id, name) {
+  if (!confirm(`「${name}」を削除しますか？`)) return;
+  const { error } = await db.from('stores').delete().eq('id', id);
+  if (error) { showToast('削除に失敗しました'); console.error(error); return; }
+  await loadStores();
+  renderStoreMgmt();
   showToast('削除しました');
 }
 
