@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS staff (
   name        text    NOT NULL,
   img_url     text,
   profile_url text,
+  age         integer,
   height      integer,
   bust        integer,
   waist       integer,

@@ -336,20 +336,26 @@
       <input type="url" id="m-profile-url" class="modal-input" placeholder="https://...">
     </div>
 
-    <div class="row g-2 mb-3">
-      <div class="col-6 col-sm-3">
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <div class="modal-label">年齢 (歳)</div>
+        <input type="number" id="m-age" class="modal-input" placeholder="25">
+      </div>
+      <div class="col-6">
         <div class="modal-label">身長 (cm)</div>
         <input type="number" id="m-height" class="modal-input" placeholder="160">
       </div>
-      <div class="col-6 col-sm-3">
+    </div>
+    <div class="row g-2 mb-3">
+      <div class="col-4">
         <div class="modal-label">バスト (cm)</div>
         <input type="number" id="m-bust" class="modal-input" placeholder="85">
       </div>
-      <div class="col-6 col-sm-3">
+      <div class="col-4">
         <div class="modal-label">ウエスト (cm)</div>
         <input type="number" id="m-waist" class="modal-input" placeholder="60">
       </div>
-      <div class="col-6 col-sm-3">
+      <div class="col-4">
         <div class="modal-label">ヒップ (cm)</div>
         <input type="number" id="m-hip" class="modal-input" placeholder="88">
       </div>
@@ -535,7 +541,7 @@ function renderStaffMgmt() {
     return;
   }
   list.innerHTML = staffList.map(s => {
-    const spec = [s.height && `${s.height}cm`, s.bust && `B${s.bust}`, s.waist && `W${s.waist}`, s.hip && `H${s.hip}`]
+    const spec = [s.age && `${s.age}歳`, s.height && `${s.height}cm`, s.bust && `B${s.bust}`, s.waist && `W${s.waist}`, s.hip && `H${s.hip}`]
       .filter(Boolean).join(' / ');
     const storeName = s.store_id ? (storeList.find(x => x.id === s.store_id)?.name || '') : '';
     return `
@@ -564,6 +570,7 @@ function openStaffModal(staffId) {
   const s = staffId ? staffList.find(x => x.id === staffId) : null;
   document.getElementById('m-name').value        = s?.name        || '';
   document.getElementById('m-profile-url').value = s?.profile_url || '';
+  document.getElementById('m-age').value         = s?.age         ?? '';
   document.getElementById('m-height').value      = s?.height      ?? 160;
   document.getElementById('m-bust').value        = s?.bust        ?? 80;
   document.getElementById('m-waist').value       = s?.waist       ?? 50;
@@ -608,6 +615,7 @@ async function saveStaff() {
   const payload = {
     name,
     profile_url: document.getElementById('m-profile-url').value.trim() || null,
+    age:    parseInt(document.getElementById('m-age').value)    || null,
     height: parseInt(document.getElementById('m-height').value) || null,
     bust:   parseInt(document.getElementById('m-bust').value)   || null,
     waist:  parseInt(document.getElementById('m-waist').value)  || null,
