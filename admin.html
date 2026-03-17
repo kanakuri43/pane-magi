@@ -7,13 +7,13 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
   <style>
     :root {
-      --accent:  #4fa8d8;
-      --accent2: #7bc4a0;
-      --bg:      #f0f7fb;
+      --accent:  #d4722a;
+      --accent2: #c45b3a;
+      --bg:      #fdf5ee;
       --surface: #ffffff;
-      --border:  #d4e8f5;
-      --text:    #334e5e;
-      --muted:   #8aabbe;
+      --border:  #edd5bb;
+      --text:    #4a2e1a;
+      --muted:   #b0856a;
     }
     body { background: var(--bg); color: var(--text); font-family: 'Hiragino Kaku Gothic ProN', sans-serif; }
 
@@ -38,7 +38,7 @@
 
     /* ── Header ── */
     .app-header {
-      background: linear-gradient(135deg, #e8f6ff, #d0edf8);
+      background: linear-gradient(135deg, #fff0e4, #ffe0c8);
       border-bottom: 2px solid var(--accent);
       padding: 14px 20px;
     }
@@ -69,21 +69,21 @@
       width: 100%; padding: 9px 14px; background: var(--surface);
       border: 1.5px solid var(--border); border-radius: 8px; color: var(--text);
       font-size: 0.95rem; appearance: none; cursor: pointer;
-      box-shadow: 0 1px 4px rgba(79,168,216,.08);
+      box-shadow: 0 1px 4px rgba(212,114,42,.08);
     }
     .app-select:focus { outline: none; border-color: var(--accent); }
     .date-arrow {
       width: 38px; height: 38px; border-radius: 8px; flex-shrink: 0;
       background: var(--surface); border: 1.5px solid var(--border); color: var(--muted);
       font-size: 1.1rem; cursor: pointer; display: flex; align-items: center; justify-content: center;
-      transition: all .2s; box-shadow: 0 1px 4px rgba(79,168,216,.08);
+      transition: all .2s; box-shadow: 0 1px 4px rgba(212,114,42,.08);
     }
     .date-arrow:hover { border-color: var(--accent); color: var(--accent); }
     .date-display {
       flex: 1; padding: 9px 14px; text-align: center;
       background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px;
       font-size: 0.95rem; color: var(--text); cursor: pointer; user-select: none;
-      box-shadow: 0 1px 4px rgba(79,168,216,.08);
+      box-shadow: 0 1px 4px rgba(212,114,42,.08);
     }
     .date-display:hover { border-color: var(--accent); }
     #date-select { position: absolute; opacity: 0; pointer-events: none; width: 0; height: 0; }
@@ -94,10 +94,10 @@
       background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
       display: flex; align-items: center; padding: 10px 14px; gap: 12px;
       cursor: pointer; transition: all .2s; height: 100%;
-      box-shadow: 0 1px 6px rgba(79,168,216,.08);
+      box-shadow: 0 1px 6px rgba(212,114,42,.08);
     }
-    .staff-row.selected { border-color: var(--accent); background: #e8f6ff; }
-    .staff-row img { width: 44px; height: 74px; object-fit: cover; object-position: top; border-radius: 8px; flex-shrink: 0; background: #d0edf8; }
+    .staff-row.selected { border-color: var(--accent); background: #fff0e4; }
+    .staff-row img { width: 44px; height: 74px; object-fit: cover; object-position: top; border-radius: 8px; flex-shrink: 0; background: #ffe0c8; }
     .staff-row .r-info { flex: 1; min-width: 0; }
     .staff-row .r-name { font-size: 0.9rem; margin-bottom: 4px; color: var(--text); font-weight: 600; }
     .staff-row .check {
@@ -109,24 +109,24 @@
     /* ── Tags ── */
     .tag {
       font-size: 0.62rem; padding: 2px 7px; border-radius: 10px;
-      background: rgba(123,196,160,.15); border: 1px solid rgba(123,196,160,.5); color: #3d9e76;
+      background: rgba(212,114,42,.12); border: 1px solid rgba(212,114,42,.4); color: #b05a18;
     }
     .r-tags { display: flex; flex-wrap: wrap; gap: 3px; }
 
     /* ── Misc ── */
     .update-btn {
       width: 100%; padding: 13px; margin-top: 16px;
-      background: linear-gradient(135deg, var(--accent), #2d8abf);
+      background: linear-gradient(135deg, var(--accent), #b85a1a);
       border: none; border-radius: 10px; color: #fff; font-size: 1rem;
       cursor: pointer; letter-spacing: 2px; transition: opacity .2s;
-      box-shadow: 0 3px 12px rgba(79,168,216,.35);
+      box-shadow: 0 3px 12px rgba(212,114,42,.35);
     }
     .update-btn:hover { opacity: .88; }
     .toast-wrap {
       position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px);
       background: var(--accent); color: #fff; padding: 11px 26px; border-radius: 24px;
       font-size: 0.9rem; transition: transform .3s; pointer-events: none; z-index: 9999;
-      box-shadow: 0 4px 16px rgba(79,168,216,.4);
+      box-shadow: 0 4px 16px rgba(212,114,42,.4);
     }
     .toast-wrap.show { transform: translateX(-50%) translateY(0); }
 
@@ -138,7 +138,7 @@
     .add-store-btn:hover { opacity: .88; }
     .store-mgmt-row {
       background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
-      padding: 12px 16px; box-shadow: 0 1px 6px rgba(79,168,216,.08);
+      padding: 12px 16px; box-shadow: 0 1px 6px rgba(212,114,42,.08);
     }
     .store-mgmt-row .s-name { font-size: 0.9rem; color: var(--text); font-weight: 600; margin-bottom: 3px; }
     .store-mgmt-row .s-detail { font-size: 0.75rem; color: var(--muted); }
@@ -152,11 +152,11 @@
     .mgmt-row {
       background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
       display: flex; align-items: center; padding: 10px 14px; gap: 12px;
-      box-shadow: 0 1px 6px rgba(79,168,216,.08);
+      box-shadow: 0 1px 6px rgba(212,114,42,.08);
     }
     .mgmt-row img {
       width: 44px; height: 74px; object-fit: cover; object-position: top;
-      border-radius: 8px; flex-shrink: 0; background: #d0edf8;
+      border-radius: 8px; flex-shrink: 0; background: #ffe0c8;
     }
     .mgmt-row .r-info { flex: 1; min-width: 0; }
     .mgmt-row .r-name { font-size: 0.9rem; color: var(--text); font-weight: 600; margin-bottom: 3px; }
@@ -197,13 +197,13 @@
     .modal-input:focus { outline: none; border-color: var(--accent); }
     .photo-preview {
       width: 60px; height: 100px; object-fit: cover; object-position: top;
-      border-radius: 8px; background: #d0edf8; border: 1.5px solid var(--border);
+      border-radius: 8px; background: #ffe0c8; border: 1.5px solid var(--border);
     }
     .modal-save-btn {
-      width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent), #2d8abf);
+      width: 100%; padding: 12px; background: linear-gradient(135deg, var(--accent), #b85a1a);
       border: none; border-radius: 10px; color: #fff; font-size: 1rem;
       cursor: pointer; letter-spacing: 2px; transition: opacity .2s;
-      box-shadow: 0 3px 12px rgba(79,168,216,.35);
+      box-shadow: 0 3px 12px rgba(212,114,42,.35);
     }
     .modal-save-btn:hover { opacity: .88; }
     .modal-cancel-btn {
