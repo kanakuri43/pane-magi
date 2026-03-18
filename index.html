@@ -209,7 +209,9 @@ function toggleTagFilter(tag) {
 
 // ── Render ────────────────────────────────────────────────────
 function render() {
-  const dutyStaff = onDutyIds.map(id => staffList.find(x => x.id === id)).filter(Boolean);
+  const storeId = parseInt(getShop());
+  const dutyStaff = onDutyIds.map(id => staffList.find(x => x.id === id))
+    .filter(s => s && s.store_id === storeId);
   renderTagFilter(dutyStaff);
   const grid = document.getElementById('guest-grid');
 

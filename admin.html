@@ -473,8 +473,9 @@ async function loadAttendance() {
 
 // ── Attendance render ──────────────────────────────────────────
 function render() {
+  const storeId = parseInt(getShop());
   const list = document.getElementById('admin-list');
-  list.innerHTML = staffList.map(s => {
+  list.innerHTML = staffList.filter(s => s.store_id === storeId).map(s => {
     const sel = onDutyIds.has(s.id);
     return `
     <div class="col-12 col-md-6">
