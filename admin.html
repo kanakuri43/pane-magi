@@ -143,6 +143,42 @@
     .store-mgmt-row .s-name { font-size: 0.9rem; color: var(--text); font-weight: 600; margin-bottom: 3px; }
     .store-mgmt-row .s-detail { font-size: 0.75rem; color: var(--muted); }
 
+    /* ── Tag multi-select dropdown ── */
+    .tag-dropdown { position: relative; }
+    .tag-dropdown-toggle {
+      width: 100%; padding: 8px 12px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: 0.9rem; color: var(--text); background: var(--bg);
+      cursor: pointer; display: flex; align-items: center; justify-content: space-between;
+      gap: 6px; min-height: 38px; user-select: none;
+    }
+    .tag-dropdown-toggle:hover, .tag-dropdown.open .tag-dropdown-toggle { border-color: var(--accent); }
+    .tag-dropdown-menu {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0; z-index: 100;
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: 8px;
+      max-height: 180px; overflow-y: auto;
+      box-shadow: 0 4px 16px rgba(0,0,0,.12);
+    }
+    .tag-dropdown-item {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; cursor: pointer; font-size: 0.88rem; margin: 0;
+    }
+    .tag-dropdown-item:hover { background: #fff0e4; }
+    .tag-dropdown-item input[type=checkbox] { accent-color: var(--accent); cursor: pointer; flex-shrink: 0; }
+    .tag-selected-preview { display: flex; flex-wrap: wrap; gap: 3px; flex: 1; }
+    .tag-placeholder { color: var(--muted); }
+
+    /* ── Tag management ── */
+    .add-tag-btn {
+      padding: 9px 22px; background: var(--accent); border: none; border-radius: 8px;
+      color: #fff; font-size: 0.88rem; cursor: pointer; letter-spacing: 1px; transition: opacity .2s;
+    }
+    .add-tag-btn:hover { opacity: .88; }
+    .tag-mgmt-row {
+      background: var(--surface); border: 1.5px solid var(--border); border-radius: 12px;
+      padding: 12px 16px; box-shadow: 0 1px 6px rgba(212,114,42,.08);
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+
     /* ── Staff management ── */
     .add-staff-btn {
       padding: 9px 22px; background: var(--accent2); border: none; border-radius: 8px;
@@ -243,6 +279,7 @@
   <button class="admin-tab active" id="tab-btn-attendance" onclick="showTab('attendance')">出勤登録</button>
   <button class="admin-tab" id="tab-btn-staff" onclick="showTab('staff')">スタッフ管理</button>
   <button class="admin-tab" id="tab-btn-store" onclick="showTab('store')">店舗管理</button>
+  <button class="admin-tab" id="tab-btn-tag" onclick="showTab('tag')">タグ管理</button>
 </div>
 
 <!-- ── Tab: 出勤登録 ── -->
@@ -294,6 +331,17 @@
   </div>
 </div>
 
+<!-- ── Tab: タグ管理 ── -->
+<div id="tab-tag" style="display:none">
+  <div class="container-lg py-4 px-3 px-md-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="section-label mb-0">タグ一覧</div>
+      <button class="add-tag-btn" onclick="openTagModal()">＋ 新規追加</button>
+    </div>
+    <div class="d-flex flex-column gap-2" id="tag-mgmt-list"></div>
+  </div>
+</div>
+
 <!-- ── Store modal ── -->
 <div class="modal-overlay" id="store-modal">
   <div class="modal-box">
@@ -315,6 +363,20 @@
     <div id="store-modal-error" style="color:#e74c3c; font-size:0.82rem; min-height:1.2em; margin-bottom:8px;"></div>
     <button class="modal-save-btn" onclick="saveStore()">保　存</button>
     <button class="modal-cancel-btn" onclick="closeStoreModal()">キャンセル</button>
+  </div>
+</div>
+
+<!-- ── Tag modal ── -->
+<div class="modal-overlay" id="tag-modal">
+  <div class="modal-box">
+    <h3 id="tag-modal-title">タグ登録</h3>
+    <div class="mb-3">
+      <div class="modal-label">タグ名 *</div>
+      <input type="text" id="tm-name" class="modal-input" placeholder="例：読書">
+    </div>
+    <div id="tag-modal-error" style="color:#e74c3c; font-size:0.82rem; min-height:1.2em; margin-bottom:8px;"></div>
+    <button class="modal-save-btn" onclick="saveTag()">保　存</button>
+    <button class="modal-cancel-btn" onclick="closeTagModal()">キャンセル</button>
   </div>
 </div>
 
@@ -362,8 +424,14 @@
     </div>
 
     <div class="mb-3">
-      <div class="modal-label">タグ（カンマ区切り）</div>
-      <input type="text" id="m-tags" class="modal-input" placeholder="読書, 料理, 旅行">
+      <div class="modal-label">タグ</div>
+      <div class="tag-dropdown" id="m-tag-dropdown">
+        <div class="tag-dropdown-toggle" onclick="toggleTagDropdown()">
+          <div class="tag-selected-preview" id="m-tag-preview"><span class="tag-placeholder">タグを選択...</span></div>
+          <span style="flex-shrink:0; color:var(--muted); font-size:0.8rem;">▾</span>
+        </div>
+        <div class="tag-dropdown-menu" id="m-tag-menu" style="display:none"></div>
+      </div>
     </div>
 
     <div class="mb-3">
@@ -393,10 +461,12 @@
 // ── State ─────────────────────────────────────────────────────
 let staffList = [];
 let storeList = [];
+let tagList   = [];
 let onDutyIds = new Set();
 let currentDate = todayStr();
 let editingStaffId = null;   // null = new, number = editing
 let editingStoreId = null;   // null = new, number = editing
+let editingTagId   = null;   // null = new, number = editing
 
 function getShop() { return document.getElementById('shop-select').value; }
 
@@ -408,8 +478,7 @@ async function init() {
     overlay.style.display = 'flex';
     return;
   }
-  await loadStores();
-  await loadStaff();
+  await Promise.all([loadStores(), loadStaff(), loadTags()]);
   updateDateDisplay();
   await loadAttendance();
 }
@@ -426,22 +495,20 @@ async function doLogin() {
     return;
   }
   document.getElementById('login-overlay').style.display = 'none';
-  await loadStores();
-  await loadStaff();
+  await Promise.all([loadStores(), loadStaff(), loadTags()]);
   updateDateDisplay();
   await loadAttendance();
 }
 
 // ── Tab ───────────────────────────────────────────────────────
 function showTab(tab) {
-  document.getElementById('tab-attendance').style.display = tab === 'attendance' ? '' : 'none';
-  document.getElementById('tab-staff').style.display      = tab === 'staff'      ? '' : 'none';
-  document.getElementById('tab-store').style.display      = tab === 'store'      ? '' : 'none';
-  document.getElementById('tab-btn-attendance').classList.toggle('active', tab === 'attendance');
-  document.getElementById('tab-btn-staff').classList.toggle('active', tab === 'staff');
-  document.getElementById('tab-btn-store').classList.toggle('active', tab === 'store');
+  ['attendance', 'staff', 'store', 'tag'].forEach(t => {
+    document.getElementById(`tab-${t}`).style.display = t === tab ? '' : 'none';
+    document.getElementById(`tab-btn-${t}`).classList.toggle('active', t === tab);
+  });
   if (tab === 'staff') renderStaffMgmt();
   if (tab === 'store') renderStoreMgmt();
+  if (tab === 'tag')   renderTagMgmt();
 }
 
 // ── Data loading ──────────────────────────────────────────────
@@ -457,6 +524,12 @@ async function loadStaff() {
   const { data, error } = await db.from('staff').select('*').order('id');
   if (error) { console.error(error); return; }
   staffList = data;
+}
+
+async function loadTags() {
+  const { data, error } = await db.from('tags').select('*').order('name');
+  if (error) { console.error(error); return; }
+  tagList = data;
 }
 
 async function loadAttendance() {
@@ -576,7 +649,9 @@ function openStaffModal(staffId) {
   document.getElementById('m-bust').value        = s?.bust        ?? 80;
   document.getElementById('m-waist').value       = s?.waist       ?? 50;
   document.getElementById('m-hip').value         = s?.hip         ?? 80;
-  document.getElementById('m-tags').value        = (s?.tags || []).join(', ');
+  renderTagCheckboxes(s?.tags || []);
+  document.getElementById('m-tag-menu').style.display = 'none';
+  document.getElementById('m-tag-dropdown').classList.remove('open');
   document.getElementById('m-photo').value       = '';
   document.getElementById('m-photo-name').textContent = '';
   const preview = document.getElementById('m-photo-preview');
@@ -621,7 +696,7 @@ async function saveStaff() {
     bust:   parseInt(document.getElementById('m-bust').value)   || null,
     waist:  parseInt(document.getElementById('m-waist').value)  || null,
     hip:    parseInt(document.getElementById('m-hip').value)    || null,
-    tags:   document.getElementById('m-tags').value.split(',').map(t => t.trim()).filter(Boolean),
+    tags:   [...document.querySelectorAll('#m-tag-menu input[type=checkbox]:checked')].map(cb => cb.value),
     store_id: storeIdVal ? parseInt(storeIdVal) : null,
   };
 
@@ -662,6 +737,99 @@ async function deleteStaff(id, name) {
   await loadStaff();
   renderStaffMgmt();
   render();
+  showToast('削除しました');
+}
+
+// ── Tag dropdown ──────────────────────────────────────────────
+function toggleTagDropdown() {
+  const menu = document.getElementById('m-tag-menu');
+  const dropdown = document.getElementById('m-tag-dropdown');
+  const isOpen = menu.style.display !== 'none';
+  menu.style.display = isOpen ? 'none' : '';
+  dropdown.classList.toggle('open', !isOpen);
+}
+
+function updateTagPreview() {
+  const checked = [...document.querySelectorAll('#m-tag-menu input[type=checkbox]:checked')].map(cb => cb.value);
+  const preview = document.getElementById('m-tag-preview');
+  preview.innerHTML = checked.length === 0
+    ? '<span class="tag-placeholder">タグを選択...</span>'
+    : checked.map(t => `<span class="tag">${t}</span>`).join('');
+}
+
+function renderTagCheckboxes(selectedTags) {
+  const menu = document.getElementById('m-tag-menu');
+  if (tagList.length === 0) {
+    menu.innerHTML = '<div class="tag-dropdown-item" style="color:var(--muted);">タグが登録されていません</div>';
+    updateTagPreview();
+    return;
+  }
+  menu.innerHTML = tagList.map(t => `
+    <label class="tag-dropdown-item">
+      <input type="checkbox" value="${t.name}" ${selectedTags.includes(t.name) ? 'checked' : ''} onchange="updateTagPreview()">
+      ${t.name}
+    </label>`).join('');
+  updateTagPreview();
+}
+
+// ── Tag management render ──────────────────────────────────────
+function renderTagMgmt() {
+  const list = document.getElementById('tag-mgmt-list');
+  if (tagList.length === 0) {
+    list.innerHTML = '<p style="color:var(--muted); font-size:0.88rem;">タグが登録されていません</p>';
+    return;
+  }
+  list.innerHTML = tagList.map(t => `
+    <div class="tag-mgmt-row">
+      <span class="tag">${t.name}</span>
+      <div class="mgmt-actions flex-shrink-0">
+        <button class="btn-edit" onclick="openTagModal(${t.id})">編集</button>
+        <button class="btn-del" onclick="deleteTag(${t.id}, '${t.name.replace(/'/g, "\\'")}')">削除</button>
+      </div>
+    </div>`).join('');
+}
+
+function openTagModal(tagId) {
+  editingTagId = tagId || null;
+  document.getElementById('tag-modal-title').textContent = tagId ? 'タグ編集' : 'タグ登録';
+  document.getElementById('tag-modal-error').textContent = '';
+  const t = tagId ? tagList.find(x => x.id === tagId) : null;
+  document.getElementById('tm-name').value = t?.name || '';
+  document.getElementById('tag-modal').classList.add('open');
+}
+
+function closeTagModal() {
+  document.getElementById('tag-modal').classList.remove('open');
+}
+
+async function saveTag() {
+  const name = document.getElementById('tm-name').value.trim();
+  if (!name) {
+    document.getElementById('tag-modal-error').textContent = 'タグ名は必須です';
+    return;
+  }
+  document.getElementById('tag-modal-error').textContent = '';
+
+  if (editingTagId) {
+    const { error } = await db.from('tags').update({ name }).eq('id', editingTagId);
+    if (error) { document.getElementById('tag-modal-error').textContent = '保存に失敗しました'; console.error(error); return; }
+  } else {
+    const { error } = await db.from('tags').insert({ name });
+    if (error) { document.getElementById('tag-modal-error').textContent = '保存に失敗しました'; console.error(error); return; }
+  }
+
+  await loadTags();
+  renderTagMgmt();
+  closeTagModal();
+  showToast(editingTagId ? '更新しました' : '登録しました');
+}
+
+async function deleteTag(id, name) {
+  if (!confirm(`「${name}」を削除しますか？`)) return;
+  const { error } = await db.from('tags').delete().eq('id', id);
+  if (error) { showToast('削除に失敗しました'); console.error(error); return; }
+  await loadTags();
+  renderTagMgmt();
   showToast('削除しました');
 }
 
@@ -739,6 +907,14 @@ async function deleteStore(id, name) {
   renderStoreMgmt();
   showToast('削除しました');
 }
+
+document.addEventListener('click', function(e) {
+  const dropdown = document.getElementById('m-tag-dropdown');
+  if (dropdown && !dropdown.contains(e.target)) {
+    document.getElementById('m-tag-menu').style.display = 'none';
+    dropdown.classList.remove('open');
+  }
+});
 
 init();
 </script>
