@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>出勤管理（管理者）</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<!-- Login overlay -->
+<div id="login-overlay" style="display:none">
+  <div class="login-box">
+    <h2>管理者ログイン</h2>
+    <div class="mb-3">
+      <input type="email" id="login-email" class="form-control" placeholder="メールアドレス">
+    </div>
+    <div class="mb-3">
+      <input type="password" id="login-password" class="form-control" placeholder="パスワード"
+             onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <p id="login-error" style="color:#e74c3c; font-size:0.82rem; min-height:1.2em; margin-bottom:12px;"></p>
+    <button class="login-btn" onclick="doLogin()">ログイン</button>
+  </div>
+</div>
+
+<!-- Header -->
+<div class="app-header d-flex align-items-center justify-content-between">
+  <h1> 出勤情報</h1>
+  <a href="index.html" class="back-link">← 客用画面</a>
+</div>
+
+<!-- Tab nav -->
+<div class="admin-tabs">
+  <button class="admin-tab active" id="tab-btn-attendance" onclick="showTab('attendance')">出勤登録</button>
+  <button class="admin-tab" id="tab-btn-staff" onclick="showTab('staff')">スタッフ管理</button>
+  <button class="admin-tab" id="tab-btn-store" onclick="showTab('store')">店舗管理</button>
+  <button class="admin-tab" id="tab-btn-tag" onclick="showTab('tag')">タグ管理</button>
+</div>
+
+<!-- ── Tab: 出勤登録 ── -->
+<div id="tab-attendance">
+  <div class="container-lg py-4 px-3 px-md-4">
+    <div class="row g-3 mb-3">
+      <!-- Shop -->
+      <div class="col-12 col-md-4">
+        <div class="ctrl-label">SHOP</div>
+        <select class="app-select" id="shop-select" onchange="loadAttendance()"></select>
+      </div>
+      <!-- Date -->
+      <div class="col-12 col-md-8">
+        <div class="ctrl-label">DATE</div>
+        <div class="d-flex align-items-center gap-2">
+          <button class="date-arrow" onclick="shiftDate(-1)">‹</button>
+          <div class="date-display" onclick="openDatePicker()" id="date-display"></div>
+          <button class="date-arrow" onclick="shiftDate(1)">›</button>
+        </div>
+        <input type="date" id="date-select" onchange="onDatePicked()">
+      </div>
+    </div>
+
+    <div class="section-label">出勤スタッフ選択</div>
+    <div class="row g-3" id="admin-list"></div>
+    <button class="update-btn" onclick="saveSchedule()">更　新</button>
+  </div>
+</div>
+
+<!-- ── Tab: スタッフ管理 ── -->
+<div id="tab-staff" style="display:none">
+  <div class="container-lg py-4 px-3 px-md-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="section-label mb-0">スタッフ一覧</div>
+      <button class="add-staff-btn" onclick="openStaffModal()">＋ 新規追加</button>
+    </div>
+    <div class="d-flex flex-column gap-2" id="staff-mgmt-list"></div>
+  </div>
+</div>
+
+<!-- ── Tab: 店舗管理 ── -->
+<div id="tab-store" style="display:none">
+  <div class="container-lg py-4 px-3 px-md-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="section-label mb-0">店舗一覧</div>
+      <button class="add-store-btn" onclick="openStoreModal()">＋ 新規追加</button>
+    </div>
+    <div class="d-flex flex-column gap-2" id="store-mgmt-list"></div>
+  </div>
+</div>
+
+<!-- ── Tab: タグ管理 ── -->
+<div id="tab-tag" style="display:none">
+  <div class="container-lg py-4 px-3 px-md-4">
+    <div class="d-flex align-items-center justify-content-between mb-3">
+      <div class="section-label mb-0">タグ一覧</div>
+      <button class="add-tag-btn" onclick="openTagModal()">＋ 新規追加</button>
+    </div>
+    <div class="d-flex flex-column gap-2" id="tag-mgmt-list"></div>
+  </div>
+</div>
+
+<!-- ── Store modal ── -->
+<div class="modal-overlay" id="store-modal">
+  <div class="modal-box">
+    <h3 id="store-modal-title">店舗登録</h3>
+
+    <div class="mb-3">
+      <div class="modal-label">店舗名 *</div>
+      <input type="text" id="sm-name" class="modal-input" placeholder="店舗名">
+    </div>
+    <div class="mb-3">
+      <div class="modal-label">住所</div>
+      <input type="text" id="sm-address" class="modal-input" placeholder="東京都渋谷区...">
+    </div>
+    <div class="mb-3">
+      <div class="modal-label">TEL</div>
+      <input type="tel" id="sm-tel" class="modal-input" placeholder="03-0000-0000">
+    </div>
+
+    <div id="store-modal-error" style="color:#e74c3c; font-size:0.82rem; min-height:1.2em; margin-bottom:8px;"></div>
+    <button class="modal-save-btn" onclick="saveStore()">保　存</button>
+    <button class="modal-cancel-btn" onclick="closeStoreModal()">キャンセル</button>
+  </div>
+</div>
+
+<!-- ── Tag modal ── -->
+<div class="modal-overlay" id="tag-modal">
+  <div class="modal-box">
+    <h3 id="tag-modal-title">タグ登録</h3>
+    <div class="mb-3">
+      <div class="modal-label">タグ名 *</div>
+      <input type="text" id="tm-name" class="modal-input" placeholder="例：読書">
+    </div>
+    <div id="tag-modal-error" style="color:#e74c3c; font-size:0.82rem; min-height:1.2em; margin-bottom:8px;"></div>
+    <button class="modal-save-btn" onclick="saveTag()">保　存</button>
+    <button class="modal-cancel-btn" onclick="closeTagModal()">キャンセル</button>
+  </div>
+</div>
+
+<!-- ── Staff modal ── -->
+<div class="modal-overlay" id="staff-modal">
+  <div class="modal-box">
+    <h3 id="modal-title">スタッフ登録</h3>
+
+    <div class="mb-3">
+      <div class="modal-label">名前 *</div>
+      <input type="text" id="m-name" class="modal-input" placeholder="氏名">
+    </div>
+    <div class="mb-3">
+      <div class="modal-label">所属店舗</div>
+      <select id="m-store-id" class="modal-input"></select>
+    </div>
+    <div class="mb-3">
+      <div class="modal-label">プロフィールURL</div>
+      <input type="url" id="m-profile-url" class="modal-input" placeholder="https://...">
+    </div>
+
+    <div class="row g-2 mb-2">
+      <div class="col-6">
+        <div class="modal-label">年齢 (歳)</div>
+        <input type="number" id="m-age" class="modal-input" placeholder="25">
+      </div>
+      <div class="col-6">
+        <div class="modal-label">身長 (cm)</div>
+        <input type="number" id="m-height" class="modal-input" placeholder="160">
+      </div>
+    </div>
+    <div class="row g-2 mb-3">
+      <div class="col-4">
+        <div class="modal-label">バスト (cm)</div>
+        <input type="number" id="m-bust" class="modal-input" placeholder="85">
+      </div>
+      <div class="col-4">
+        <div class="modal-label">ウエスト (cm)</div>
+        <input type="number" id="m-waist" class="modal-input" placeholder="60">
+      </div>
+      <div class="col-4">
+        <div class="modal-label">ヒップ (cm)</div>
+        <input type="number" id="m-hip" class="modal-input" placeholder="88">
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <div class="modal-label">タグ</div>
+      <div class="tag-dropdown" id="m-tag-dropdown">
+        <div class="tag-dropdown-toggle" onclick="toggleTagDropdown()">
+          <div class="tag-selected-preview" id="m-tag-preview"><span class="tag-placeholder">タグを選択...</span></div>
+          <span style="flex-shrink:0; color:var(--muted); font-size:0.8rem;">▾</span>
+        </div>
+        <div class="tag-dropdown-menu" id="m-tag-menu" style="display:none"></div>
+      </div>
+    </div>
+
+    <div class="mb-3">
+      <div class="modal-label">写真</div>
+      <div class="d-flex align-items-center gap-3">
+        <img id="m-photo-preview" class="photo-preview" alt="preview">
+        <div>
+          <input type="file" id="m-photo" accept="image/*" onchange="previewPhoto(this)" style="display:none">
+          <button type="button" class="btn-edit" onclick="document.getElementById('m-photo').click()">写真を選択</button>
+          <div id="m-photo-name" style="font-size:0.72rem; color:var(--muted); margin-top:6px;"></div>
+        </div>
+      </div>
+    </div>
+
+    <div id="modal-save-error" style="color:#e74c3c; font-size:0.82rem; min-height:1.2em; margin-bottom:8px;"></div>
+    <button class="modal-save-btn" onclick="saveStaff()">保　存</button>
+    <button class="modal-cancel-btn" onclick="closeStaffModal()">キャンセル</button>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js"></script>
+<script src="shared.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>
